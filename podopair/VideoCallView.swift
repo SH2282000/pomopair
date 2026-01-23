@@ -51,6 +51,8 @@ struct VideoCallView: View {
                     .padding()
                 }
                 Spacer()
+                
+                TimerOverlayView()
             }
         }
         .onAppear {
