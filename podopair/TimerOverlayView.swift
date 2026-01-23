@@ -7,89 +7,84 @@ struct TimerOverlayView: View {
     
     var body: some View {
         ZStack {
-            // Liquid Glass Background
-            RoundedRectangle(cornerRadius: 30)
-                 .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-                .background(
-                     // Subtle colored blobs BEHIND the blur material for the "glass" look
-                    AnimatedBlobView(phase: viewModel.isRunning ? 360 : 0)
-                        .blur(radius: 10) // Blur the blob itself too
-                )
+            // Soft Background
+            ZStack {
+                AnimatedBlobView(phase: viewModel.isRunning ? 360 : 0)
+                    .blur(radius: 20)
+                    .opacity(0.8)
+                
+                Color.black.opacity(0.2) // Slight dim for readability
+            }
+            .mask(
+                Circle()
+                    .frame(width: 350, height: 350)
+                    .blur(radius: 10)
+            )
             
-            VStack(spacing: 25) {
-                // Time Display with Animation
-                ZStack {
-                    if viewModel.isRunning {
-                        Circle()
-                            .trim(from: 0, to: viewModel.progress)
-                            .stroke(
-                                // Use the same orange as Clock app (Color.orange is very close)
-                                LinearGradient(colors: [.orange, .orange.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing),
-                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                            )
-                            .frame(width: 220, height: 220)
-                            .rotationEffect(.degrees(-90))
-                            .animation(.linear(duration: 1.0), value: viewModel.progress)
+            // Progress Ring (Surrounding everything)
+            if viewModel.isRunning {
+                Circle()
+                    .trim(from: 0, to: viewModel.progress)
+                    .stroke(
+                        LinearGradient(colors: [.orange, .orange.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                    )
+                    .frame(width: 330, height: 330)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.linear(duration: 1.0), value: viewModel.progress)
+            }
+            
+            // Content
+            VStack(spacing: 20) {
+                // Time Display
+                Text(viewModel.timeString)
+                    .font(.system(size: 60, weight: .thin, design: .rounded))
+                    .foregroundStyle(.white)
+                    .contentTransition(.numericText())
+                    .shadow(color: .orange.opacity(0.3), radius: 10)
+                    .onTapGesture {
+                        // Quick add minute if tapped?
                     }
-                    
-                    Text(viewModel.timeString)
-                        .font(.system(size: 60, weight: .thin, design: .rounded))
-                        .foregroundStyle(.white)
-                        .contentTransition(.numericText())
-                        .shadow(color: .orange.opacity(0.3), radius: 10)
-                }
-                .onTapGesture {
-                    // Quick add minute if tapped? Or just visual.
-                }
 
                 // Controls
-                HStack(spacing: 40) {
+                HStack(spacing: 30) {
                     
                     // Time Adjustment (Only when not running)
                     if !viewModel.isRunning {
                         Button(action: { viewModel.adjustTime(by: -300) }) {
                             Image(systemName: "minus.circle.fill")
-                                .font(.title)
+                                .font(.system(size: 40))
                                 .foregroundColor(.orange)
+                                .background(Circle().fill(.white).padding(2))
                         }
                         .disabled(viewModel.totalTime <= 300)
                         
                         Button(action: { viewModel.adjustTime(by: 300) }) {
                             Image(systemName: "plus.circle.fill")
-                                .font(.title)
+                                .font(.system(size: 40))
                                 .foregroundColor(.orange)
+                                .background(Circle().fill(.white).padding(2))
                         }
                     } else {
-                        // Cancel Button
+                        // Reset Button
                          Button(action: { viewModel.reset() }) {
-                            VStack(spacing: 5) {
-                                Image(systemName: "arrow.counterclockwise")
-                                    .font(.title2)
-                                Text("Reset")
-                                    .font(.caption)
-                            }
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(
-                                Circle()
-                                    .fill(.gray.opacity(0.5))
-                            )
+                             Image(systemName: "arrow.counterclockwise")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 50, height: 50)
+                                .background(
+                                    Circle()
+                                        .fill(.gray.opacity(0.5))
+                                )
                         }
                     }
                     
                     // Start/Stop
                     Button(action: { viewModel.toggleTimer() }) {
                         Image(systemName: viewModel.isRunning ? "pause.fill" : "play.fill")
-                            .font(.system(size: 30))
+                            .font(.system(size: 25))
                             .foregroundColor(.white)
-                            .frame(width: 70, height: 70)
-                            .background(
-                                Circle()
-                                    .fill(
-                                        viewModel.isRunning ? Color.orange.opacity(0.8) : Color.green.opacity(0.8)
-                                    )
-                            )
+                            .frame(width: 60, height: 60)
                             .background(
                                 Circle()
                                      .fill(Color.orange)
@@ -98,9 +93,8 @@ struct TimerOverlayView: View {
                     }
                 }
             }
-            .padding()
         }
-        .frame(height: 350)
+        .frame(width: 350, height: 350)
     }
 }
 
