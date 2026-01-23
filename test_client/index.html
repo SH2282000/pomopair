@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Debug Client</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #202020;
+            color: white;
+        }
+
+        .video-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        video {
+            width: 320px;
+            height: 240px;
+            background: black;
+            border: 1px solid #444;
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #logs {
+            margin-top: 20px;
+            width: 80%;
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #555;
+            background: #111;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+
+<body>
+    <h1>WebRTC Debug Client</h1>
+    <div class="controls">
+        <button id="startBtn" onclick="start()">Start Camera & Connect</button>
+        <span id="roleDisplay"></span>
+    </div>
+    <div class="video-container">
+        <div>
+            <h3>Local</h3>
+            <video id="localVideo" autoplay playsinline muted></video>
+        </div>
+        <div>
+            <h3>Remote</h3>
+            <video id="remoteVideo" autoplay playsinline></video>
+        </div>
+    </div>
+    <div id="logs"></div>
+
+    <script>
+        const SIGNALING_URL = 'http://85.214.6.146:3000';
+        const ROOM_NAME = 'test_room';
+        const ICE_SERVERS = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'turn:85.214.6.146:3478', username: 'myuser', credential: 'mypassword' }
+            ]
+        };
+
+        let socket;
+        let pc;
+        let localStream;
+        let isInitiator = false;
+
+        function log(msg) {
+            console.log(msg);
+            const logDiv = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${msg}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function start() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+                log('Got local user media');
+
+                connectSocket();
+                document.getElementById('startBtn').disabled = true;
+            } catch (e) {
+                log(`Error getting user media: ${e.message}`);
+            }
+        }
+
+        function connectSocket() {
+            log(`Connecting to ${SIGNALING_URL}...`);
+            socket = io(SIGNALING_URL, { transports: ['polling', 'websocket'] });
+
+            socket.on('connect', () => {
+                log('Socket connected');
+                log(`Joining room: ${ROOM_NAME}`);
+                socket.emit('join', ROOM_NAME);
+            });
+
+            socket.on('created', () => {
+                log('Room created (Initiator)');
+                isInitiator = true;
+                document.getElementById('roleDisplay').textContent = "Role: Initiator";
+                createPeerConnection(); // Initiator creates PC immediately? Or waiting?
+                // Actually usually initiator creates offer immediately upon 'created' or wait for 'joined' (peer) but here room size logic implies 'created' means alone.
+                // Wait.
+                // If I am 'created', I am the first. I must wait for someone to join before offering?
+                // socket.io-client room logic usually:
+                // User 1 -> 'created'. Waits.
+                // User 2 -> 'joined'. User 2 emits 'ready' or just 'joined'.
+                // Ideally User 1 sees 'joined' too?
+                // The server code provided:
+                // socket.join(roomId); socket.emit("created");
+                // socket.join(roomId); socket.emit("joined");
+
+                // Does User 1 get a notification when User 2 joins? Not in the provided server code!
+                // The provided server code ONLY emits to the socket that called 'join'.
+                // "socket.emit('created')" -> only to sender.
+                // "socket.emit('joined')" -> only to sender.
+                // It does NOT broadcast "user-joined" to the room.
+                // THIS IS CRITICAL.
+                // If the server doesn't tell User 1 that User 2 joined, User 1 never allows User 2 to connect if User 1 is expected to OFFER.
+                // BUT User 2 knows they joined.
+                // So User 2 (Callee) could initiate the Offer? Or User 2 sends a "ready" signal to the room?
+
+                // Since I cannot change the server (it's "Already Live"), I must adapt client strategy.
+                // If User 2 receives 'joined', User 2 is the second person. 
+                // Option A: User 2 sends Offer. (Unconventional, usually caller offers, but P2P is symmetric).
+                // Option B: User 2 sends a "signal" saying "I am here", then User 1 offers.
+
+                // Let's go with Option A: whoever comes second (Role: Joined) sends the Offer to the 'room'.
+                // Why? Because User 2 knows the room has 2 people (implied by 'joined' event 0->1 transition).
+                // User 1 only knows they are alone ('created').
+                // Let's try Option A.
+            });
+
+            socket.on('joined', () => {
+                log('Room joined (Peer)');
+                isInitiator = false;
+                document.getElementById('roleDisplay').textContent = "Role: Peer (Will Offer)";
+                // Since server doesn't notify First user, Second user must act or signal.
+                // Let's try sending Offer from Second User.
+                createPeerConnection();
+                createOffer();
+            });
+
+            // Server relays 'signal' to "socket.to(room)".
+            // User 2 emits 'signal', server sends to User 1.
+
+            socket.on('full', () => {
+                log('Room is full.');
+            });
+
+            socket.on('disconnect', () => log('Socket disconnected'));
+
+            socket.on('signal', async (data) => {
+                log(`Received SIGNAL: ${data.type}`);
+                if (!pc) createPeerConnection();
+
+                try {
+                    if (data.type === 'offer') {
+                        await pc.setRemoteDescription(new RTCSessionDescription(data));
+                        log('Set Remote Description (Offer)');
+                        const answer = await pc.createAnswer();
+                        await pc.setLocalDescription(answer);
+                        sendSignal({ type: 'answer', sdp: answer.sdp });
+                        log('Sent ANSWER');
+                    } else if (data.type === 'answer') {
+                        await pc.setRemoteDescription(new RTCSessionDescription(data));
+                        log('Set Remote Description (Answer)');
+                    } else if (data.type === 'candidate') {
+                        if (data.candidate) {
+                            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                            log('Added ICE Candidate');
+                        }
+                    }
+                } catch (e) {
+                    log(`Signal Error: ${e.message}`);
+                }
+            });
+        }
+
+        function sendSignal(data) {
+            data.room = ROOM_NAME;
+            socket.emit('signal', data);
+        }
+
+        function createPeerConnection() {
+            if (pc) return;
+            log('Creating RTCPeerConnection');
+            pc = new RTCPeerConnection(ICE_SERVERS);
+
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+            pc.ontrack = (event) => {
+                log('Received remote track');
+                document.getElementById('remoteVideo').srcObject = event.streams[0];
+            };
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    sendSignal({
+                        type: 'candidate',
+                        candidate: {
+                            candidate: event.candidate.candidate,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex,
+                            sdpMid: event.candidate.sdpMid
+                        }
+                    });
+                }
+            };
+
+            pc.onconnectionstatechange = () => log(`Connection state: ${pc.connectionState}`);
+        }
+
+        async function createOffer() {
+            if (!pc) createPeerConnection();
+            try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                sendSignal({ type: 'offer', sdp: offer.sdp });
+                log('Sent OFFER');
+            } catch (e) {
+                log(`Error creating offer: ${e.message}`);
+            }
+        }
+    </script>
+</body>
+
+</html>

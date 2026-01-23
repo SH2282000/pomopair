@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		65B58A052F1F90F80037F5C5 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 65B58A042F1F90F80037F5C5 /* WebRTC */; };
+		65B58A082F1F912C0037F5C5 /* SocketIO in Frameworks */ = {isa = PBXBuildFile; productRef = 65B58A072F1F912C0037F5C5 /* SocketIO */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		65C563972F1E298800135421 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +70,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				65B58A052F1F90F80037F5C5 /* WebRTC in Frameworks */,
+				65B58A082F1F912C0037F5C5 /* SocketIO in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +132,8 @@
 			);
 			name = podopair;
 			packageProductDependencies = (
+				65B58A042F1F90F80037F5C5 /* WebRTC */,
+				65B58A072F1F912C0037F5C5 /* SocketIO */,
 			);
 			productName = podopair;
 			productReference = 65C563852F1E298700135421 /* podopair.app */;
@@ -208,6 +217,10 @@
 			);
 			mainGroup = 65C5637C2F1E298700135421;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				65B58A032F1F90F80037F5C5 /* XCRemoteSwiftPackageReference "WebRTC" */,
+				65B58A062F1F912C0037F5C5 /* XCRemoteSwiftPackageReference "socket" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 65C563862F1E298700135421 /* Products */;
 			projectDirPath = "";
@@ -595,6 +608,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		65B58A032F1F90F80037F5C5 /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stasel/WebRTC.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 140.0.0;
+			};
+		};
+		65B58A062F1F912C0037F5C5 /* XCRemoteSwiftPackageReference "socket" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/socketio/socket.io-client-swift";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		65B58A042F1F90F80037F5C5 /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 65B58A032F1F90F80037F5C5 /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
+		};
+		65B58A072F1F912C0037F5C5 /* SocketIO */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 65B58A062F1F912C0037F5C5 /* XCRemoteSwiftPackageReference "socket" */;
+			productName = SocketIO;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 65C5637D2F1E298700135421 /* Project object */;
 }
