@@ -21,9 +21,7 @@ struct VideoCallView: View {
             
             // Local Video (PiP)
             VStack {
-                Spacer()
                 HStack {
-                    Spacer()
                     if let localTrack = viewModel.localVideoTrack {
                         RTCVideoView(videoTrack: localTrack)
                             .frame(width: 120, height: 160)
@@ -31,7 +29,9 @@ struct VideoCallView: View {
                             .shadow(radius: 10)
                             .padding()
                     }
+                    Spacer()
                 }
+                Spacer()
             }
             
             // Controls

@@ -9,9 +9,12 @@ struct TimerOverlayView: View {
         ZStack {
             // Liquid Glass Background
             RoundedRectangle(cornerRadius: 30)
+                 .fill(.ultraThinMaterial)
+                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
                 .background(
+                     // Subtle colored blobs BEHIND the blur material for the "glass" look
                     AnimatedBlobView(phase: viewModel.isRunning ? 360 : 0)
-                        .opacity(0.3)
+                        .blur(radius: 10) // Blur the blob itself too
                 )
             
             VStack(spacing: 25) {
@@ -21,7 +24,8 @@ struct TimerOverlayView: View {
                         Circle()
                             .trim(from: 0, to: viewModel.progress)
                             .stroke(
-                                LinearGradient(colors: [.cyan, .purple, .pink], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                // Use the same orange as Clock app (Color.orange is very close)
+                                LinearGradient(colors: [.orange, .orange.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing),
                                 style: StrokeStyle(lineWidth: 6, lineCap: .round)
                             )
                             .frame(width: 220, height: 220)
@@ -31,11 +35,9 @@ struct TimerOverlayView: View {
                     
                     Text(viewModel.timeString)
                         .font(.system(size: 60, weight: .thin, design: .rounded))
-                        .foregroundStyle(
-                            LinearGradient(colors: [.white, .white.opacity(0.8)], startPoint: .top, endPoint: .bottom)
-                        )
+                        .foregroundStyle(.white)
                         .contentTransition(.numericText())
-                        .shadow(color: .cyan.opacity(0.3), radius: 10)
+                        .shadow(color: .orange.opacity(0.3), radius: 10)
                 }
                 .onTapGesture {
                     // Quick add minute if tapped? Or just visual.
@@ -49,12 +51,14 @@ struct TimerOverlayView: View {
                         Button(action: { viewModel.adjustTime(by: -300) }) {
                             Image(systemName: "minus.circle.fill")
                                 .font(.title)
+                                .foregroundColor(.orange)
                         }
                         .disabled(viewModel.totalTime <= 300)
                         
                         Button(action: { viewModel.adjustTime(by: 300) }) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title)
+                                .foregroundColor(.orange)
                         }
                     } else {
                         // Cancel Button
@@ -65,10 +69,12 @@ struct TimerOverlayView: View {
                                 Text("Reset")
                                     .font(.caption)
                             }
-                            .foregroundColor(.red.opacity(0.8))
+                            .foregroundColor(.white)
                             .padding()
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
+                            .background(
+                                Circle()
+                                    .fill(.gray.opacity(0.5))
+                            )
                         }
                     }
                     
@@ -81,13 +87,13 @@ struct TimerOverlayView: View {
                             .background(
                                 Circle()
                                     .fill(
-                                        LinearGradient(colors: [.cyan.opacity(0.8), .blue.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                        viewModel.isRunning ? Color.orange.opacity(0.8) : Color.green.opacity(0.8)
                                     )
-                                    .shadow(color: .cyan.opacity(0.5), radius: 10)
                             )
-                            .overlay(
+                            .background(
                                 Circle()
-                                    .stroke(.white.opacity(0.3), lineWidth: 1)
+                                     .fill(Color.orange)
+                                     .shadow(color: .orange.opacity(0.5), radius: 10)
                             )
                     }
                 }
