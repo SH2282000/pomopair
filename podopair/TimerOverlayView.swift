@@ -10,16 +10,15 @@ struct TimerOverlayView: View {
             // Soft Background
             ZStack {
                 AnimatedBlobView(phase: viewModel.isRunning ? 360 : 0)
-                    .blur(radius: 20)
+                    .blur(radius: 40)
                     .opacity(0.8)
-                
-                Color.black.opacity(0.2) // Slight dim for readability
-            }
+                }
             .mask(
                 Circle()
-                    .frame(width: 350, height: 350)
+                    .frame(width: 400, height: 400)
                     .blur(radius: 10)
             )
+
             
             // Progress Ring (Surrounding everything)
             if viewModel.isRunning {
@@ -94,7 +93,8 @@ struct TimerOverlayView: View {
                 }
             }
         }
-        .frame(width: 350, height: 350)
+        .frame(width: 400, height: 400)
+        .ignoresSafeArea()
     }
 }
 
@@ -112,13 +112,18 @@ struct AnimatedBlobView: View {
                 
                 context.fill(
                     Path(ellipseIn: CGRect(x: size.width/2 + x - 100, y: size.height/2 + y - 100, width: 200, height: 200)),
-                    with: .color(.cyan.opacity(0.5))
+                    with: .color(.cyan.opacity(0.6))
                 )
                 
                 context.fill(
                     Path(ellipseIn: CGRect(x: size.width/2 - x - 80, y: size.height/2 - y - 80, width: 160, height: 160)),
-                    with: .color(.purple.opacity(0.5))
+                    with: .color(.purple.opacity(0.6))
                 )
+                
+//                context.fill(
+//                    Path(ellipseIn: CGRect(x: size.width/2 - x, y: size.height/2 - y, width: 200, height: 200)),
+//                    with: .color(.blue.opacity(0.9))
+//                )
             }
             .blur(radius: 50)
         }

@@ -16,7 +16,7 @@ struct VideoCallView: View {
             } else {
                 Color.black.edgesIgnoringSafeArea(.all)
                 Text("Waiting for peer...")
-                    .foregroundColor(.white)
+                    .foregroundColor(.orange)
             }
             
             // Local Video (PiP)
