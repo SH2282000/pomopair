@@ -16,11 +16,12 @@ final class SignalingClient {
     private let manager: SocketManager
     private let socket: SocketIOClient
     weak var delegate: SignalingClientDelegate?
-    private let roomName = "test_room" // Hardcoded for simplicity/testing
+    private let roomName: String
     
-    init(serverUrl: URL) {
+    init(serverUrl: URL, roomName: String) {
         self.manager = SocketManager(socketURL: serverUrl, config: [.log(true), .compress])
         self.socket = manager.defaultSocket
+        self.roomName = roomName
     }
     
     func connect() {
