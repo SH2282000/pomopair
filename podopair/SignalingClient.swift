@@ -8,6 +8,7 @@ protocol SignalingClientDelegate: AnyObject {
     func signalClient(_ signalClient: SignalingClient, didReceiveRemoteSdp sdp: RTCSessionDescription)
     func signalClient(_ signalClient: SignalingClient, didReceiveCandidate candidate: RTCIceCandidate)
     func signalClientDidJoinRoom(_ signalClient: SignalingClient, isInitiator: Bool)
+    func signalClient(_ signalClient: SignalingClient, didReceiveTimerEvent event: [String: Any])
 }
 
 final class SignalingClient {
@@ -61,17 +62,20 @@ final class SignalingClient {
                     let sessionDescription = RTCSessionDescription(type: sdpType, sdp: sdp)
                     self.delegate?.signalClient(self, didReceiveRemoteSdp: sessionDescription)
                 } else if type == "candidate" {
-                    guard let candidateData = data["candidate"] as? [String: Any], // Wrapped in candidate object or flat?
-                          // Based on server.js: socket.to(data.room).emit("signal", { type: data.type, sdp: data.sdp, candidate: data.candidate });
-                          // The client usually sends "candidate" object in the "signal" wrapper.
-                          // Let's assume the payload sent by client (and reflected by server) is flat or nested.
-                          // Let's be robust: Support both 'sdp'+'sdpMLineIndex' at top level OR inside 'candidate'
-                          let sdp = candidateData["candidate"] as? String ?? data["candidate"] as? String, // Careful with naming collision
+                    guard let candidateData = data["candidate"] as? [String: Any],
+                          let sdp = candidateData["candidate"] as? String ?? data["candidate"] as? String,
                           let sdpMLineIndex = candidateData["sdpMLineIndex"] as? Int32 ?? data["sdpMLineIndex"] as? Int32,
                           let sdpMid = candidateData["sdpMid"] as? String ?? data["sdpMid"] as? String else { return }
                     
                     let candidate = RTCIceCandidate(sdp: sdp, sdpMLineIndex: sdpMLineIndex, sdpMid: sdpMid)
                     self.delegate?.signalClient(self, didReceiveCandidate: candidate)
+                } else if type == "timer" {
+                    // Decoder timer event from SDP field (which we used as a payload carrier)
+                    if let payloadString = data["sdp"] as? String,
+                       let payloadData = payloadString.data(using: .utf8),
+                       let event = try? JSONSerialization.jsonObject(with: payloadData, options: []) as? [String: Any] {
+                        self.delegate?.signalClient(self, didReceiveTimerEvent: event)
+                    }
                 }
             }
         }
@@ -104,6 +108,19 @@ final class SignalingClient {
             "room": self.roomName,
             "type": "candidate",
             "candidate": candidateDict
+        ]
+        socket.emit("signal", signalData)
+    }
+    
+    func send(timerEvent: [String: Any]) {
+        // Encode event as JSON string and put in 'sdp' field
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: timerEvent, options: []),
+              let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+        
+        let signalData: [String: Any] = [
+            "room": self.roomName,
+            "type": "timer",
+            "sdp": jsonString
         ]
         socket.emit("signal", signalData)
     }

@@ -52,7 +52,7 @@ struct VideoCallView: View {
                 }
                 Spacer()
                 
-                TimerOverlayView()
+                TimerOverlayView(viewModel: viewModel.timerViewModel)
             }
         }
         .onAppear {
@@ -65,6 +65,7 @@ class VideoCallViewModel: NSObject, ObservableObject {
     
     private let signalingClient: SignalingClient
     private let webRTCClient: WebRTCClient
+    let timerViewModel = TimerViewModel()
     
     @Published var localVideoTrack: RTCVideoTrack?
     @Published var remoteVideoTrack: RTCVideoTrack?
@@ -85,6 +86,16 @@ class VideoCallViewModel: NSObject, ObservableObject {
         
         self.webRTCClient.startCaptureLocalVideo()
         self.localVideoTrack = self.webRTCClient.localVideoTrack
+        
+        // Setup Timer Connection
+        self.timerViewModel.onTimerUpdate = { [weak self] action, payload in
+            guard let self = self else { return }
+            print("Sending timer event: \(action)")
+            // Wrap in payload for network
+            var event = payload
+            event["action"] = action
+            self.signalingClient.send(timerEvent: event)
+        }
     }
     
     func connect() {
@@ -141,6 +152,13 @@ extension VideoCallViewModel: SignalingClientDelegate {
     func signalClient(_ signalClient: SignalingClient, didReceiveCandidate candidate: RTCIceCandidate) {
         print("Received Remote Candidate")
         self.webRTCClient.set(remoteCandidate: candidate)
+    }
+    
+    func signalClient(_ signalClient: SignalingClient, didReceiveTimerEvent event: [String: Any]) {
+        print("Received Timer Event")
+        if let action = event["action"] as? String {
+            self.timerViewModel.updateFromRemote(action: action, payload: event)
+        }
     }
 }
 

@@ -3,7 +3,7 @@ import AVFoundation
 import Combine
 
 struct TimerOverlayView: View {
-    @StateObject private var viewModel = TimerViewModel()
+    @ObservedObject var viewModel: TimerViewModel
     
     var body: some View {
         ZStack {
@@ -50,7 +50,7 @@ struct TimerOverlayView: View {
                     
                     // Time Adjustment (Only when not running)
                     if !viewModel.isRunning {
-                        Button(action: { viewModel.adjustTime(by: -300) }) {
+                        Button(action: { viewModel.adjustTime(by: -300, source: .local) }) {
                             Image(systemName: "minus.circle.fill")
                                 .font(.system(size: 40))
                                 .foregroundColor(.orange)
@@ -58,7 +58,7 @@ struct TimerOverlayView: View {
                         }
                         .disabled(viewModel.totalTime <= 300)
                         
-                        Button(action: { viewModel.adjustTime(by: 300) }) {
+                        Button(action: { viewModel.adjustTime(by: 300, source: .local) }) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 40))
                                 .foregroundColor(.orange)
@@ -66,7 +66,7 @@ struct TimerOverlayView: View {
                         }
                     } else {
                         // Reset Button
-                         Button(action: { viewModel.reset() }) {
+                         Button(action: { viewModel.reset(source: .local) }) {
                              Image(systemName: "arrow.counterclockwise")
                                 .font(.title2)
                                 .foregroundColor(.white)
@@ -79,7 +79,7 @@ struct TimerOverlayView: View {
                     }
                     
                     // Start/Stop
-                    Button(action: { viewModel.toggleTimer() }) {
+                    Button(action: { viewModel.toggleTimer(source: .local) }) {
                         Image(systemName: viewModel.isRunning ? "pause.fill" : "play.fill")
                             .font(.system(size: 25))
                             .foregroundColor(.white)
@@ -130,6 +130,10 @@ struct AnimatedBlobView: View {
     }
 }
 
+enum UpdateSource {
+    case local
+    case remote
+}
 
 // MARK: - ViewModel
 class TimerViewModel: ObservableObject {
@@ -140,7 +144,11 @@ class TimerViewModel: ObservableObject {
     private var timer: Timer?
     private var audioPlayer: AVAudioPlayer?
     
+    // Callback to notify parent (VideoCallViewModel) of local changes to send to network
+    var onTimerUpdate: ((_ action: String, _ payload: [String: Any]) -> Void)?
+    
     var progress: Double {
+        if totalTime == 0 { return 0 }
         return timeRemaining / totalTime
     }
     
@@ -150,43 +158,95 @@ class TimerViewModel: ObservableObject {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-    func toggleTimer() {
+    func toggleTimer(source: UpdateSource) {
         if isRunning {
-            stopTimer()
+            stopTimer(source: source)
         } else {
-            startTimer()
+            startTimer(source: source)
         }
     }
     
-    func startTimer() {
+    func startTimer(source: UpdateSource) {
+        guard !isRunning else { return }
         isRunning = true
+        
+        // Start local ticker
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             if self.timeRemaining > 0 {
                 self.timeRemaining -= 1
             } else {
-                self.stopTimer()
+                self.stopTimer(source: .local)
                 self.playCongratulationSong()
             }
         }
+        
+        if source == .local {
+            onTimerUpdate?("start", ["timeRemaining": timeRemaining, "totalTime": totalTime])
+        }
     }
     
-    func stopTimer() {
+    func stopTimer(source: UpdateSource) {
+        guard isRunning else { return }
         isRunning = false
         timer?.invalidate()
         timer = nil
+        
+        if source == .local {
+            onTimerUpdate?("stop", ["timeRemaining": timeRemaining, "totalTime": totalTime])
+        }
     }
     
-    func reset() {
-        stopTimer()
+    func reset(source: UpdateSource) {
+        stopTimer(source: source)
         timeRemaining = totalTime
+        
+        if source == .local {
+             onTimerUpdate?("reset", ["totalTime": totalTime])
+        }
     }
     
-    func adjustTime(by seconds: TimeInterval) {
+    func adjustTime(by seconds: TimeInterval, source: UpdateSource) {
         let newTime = totalTime + seconds
         if newTime > 0 {
             totalTime = newTime
             timeRemaining = newTime
+            
+            if source == .local {
+                onTimerUpdate?("adjust", ["totalTime": totalTime])
+            }
+        }
+    }
+    
+    func updateFromRemote(action: String, payload: [String: Any]) {
+        DispatchQueue.main.async {
+            switch action {
+            case "start":
+                if let rem = payload["timeRemaining"] as? TimeInterval {
+                    self.timeRemaining = rem
+                }
+                if let tot = payload["totalTime"] as? TimeInterval {
+                    self.totalTime = tot
+                }
+                self.startTimer(source: .remote)
+            case "stop":
+                 if let rem = payload["timeRemaining"] as? TimeInterval {
+                     self.timeRemaining = rem
+                 }
+                self.stopTimer(source: .remote)
+            case "reset":
+                 if let tot = payload["totalTime"] as? TimeInterval {
+                     self.totalTime = tot
+                 }
+                self.reset(source: .remote)
+            case "adjust":
+                if let tot = payload["totalTime"] as? TimeInterval {
+                    self.totalTime = tot
+                    self.timeRemaining = tot // Adjust resets current playhead usually or shifts it. Assuming reset-like behavior if not running.
+                    // If running, "adjust" is disabled in UI anyway.
+                }
+            default: break
+            }
         }
     }
     
@@ -206,6 +266,3 @@ class TimerViewModel: ObservableObject {
     }
 }
 
-#Preview {
-    TimerOverlayView()
-}
