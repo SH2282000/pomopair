@@ -1,13 +1,13 @@
 //
-//  podopairUITestsLaunchTests.swift
-//  podopairUITests
+//  pomopairUITestsLaunchTests.swift
+//  pomopairUITests
 //
 //  Created by Shannah on 19/01/2026.
 //
 
 import XCTest
 
-final class podopairUITestsLaunchTests: XCTestCase {
+final class pomopairUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

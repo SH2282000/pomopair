@@ -1,6 +1,6 @@
 //
-//  podopairApp.swift
-//  podopair
+//  pomopairApp.swift
+//  pomopair
 //
 //  Created by Shannah on 19/01/2026.
 //
@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct podopairApp: App {
+struct pomopairApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,

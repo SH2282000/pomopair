@@ -1,14 +1,14 @@
 //
-//  podopairTests.swift
-//  podopairTests
+//  pomopairTests.swift
+//  pomopairTests
 //
 //  Created by Shannah on 19/01/2026.
 //
 
 import XCTest
-@testable import podopair
+@testable import pomopair
 
-final class podopairTests: XCTestCase {
+final class pomopairTests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
