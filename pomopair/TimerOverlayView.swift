@@ -25,7 +25,7 @@ struct TimerOverlayView: View {
                 Circle()
                     .trim(from: 0, to: viewModel.progress)
                     .stroke(
-                        LinearGradient(colors: [.orange, .orange.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing),
+                        LinearGradient(colors: [Color("PomopairAccent"), Color("PomopairAccent").opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing),
                         style: StrokeStyle(lineWidth: 6, lineCap: .round)
                     )
                     .frame(width: 330, height: 330)
@@ -40,7 +40,7 @@ struct TimerOverlayView: View {
                     .font(.system(size: 60, weight: .thin, design: .rounded))
                     .foregroundStyle(.white)
                     .contentTransition(.numericText())
-                    .shadow(color: .orange.opacity(0.3), radius: 10)
+                    .shadow(color: Color("PomopairAccent").opacity(0.3), radius: 10)
                     .onTapGesture {
                         // Quick add minute if tapped?
                     }
@@ -53,7 +53,7 @@ struct TimerOverlayView: View {
                         Button(action: { viewModel.adjustTime(by: -300, source: .local) }) {
                             Image(systemName: "minus.circle.fill")
                                 .font(.system(size: 40))
-                                .foregroundColor(.orange)
+                                .foregroundColor(Color("PomopairAccent"))
                                 .background(Circle().fill(.white).padding(2))
                         }
                         .disabled(viewModel.totalTime <= 300)
@@ -61,7 +61,7 @@ struct TimerOverlayView: View {
                         Button(action: { viewModel.adjustTime(by: 300, source: .local) }) {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 40))
-                                .foregroundColor(.orange)
+                                .foregroundColor(Color("PomopairAccent"))
                                 .background(Circle().fill(.white).padding(2))
                         }
                     } else {
@@ -86,8 +86,8 @@ struct TimerOverlayView: View {
                             .frame(width: 60, height: 60)
                             .background(
                                 Circle()
-                                     .fill(Color.orange)
-                                     .shadow(color: .orange.opacity(0.5), radius: 10)
+                                     .fill(Color("PomopairAccent"))
+                                     .shadow(color: Color("PomopairAccent").opacity(0.5), radius: 10)
                             )
                     }
                 }

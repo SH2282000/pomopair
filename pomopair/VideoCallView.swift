@@ -21,8 +21,18 @@ struct VideoCallView: View {
                     .edgesIgnoringSafeArea(.all)
             } else {
                 Color.black.edgesIgnoringSafeArea(.all)
-                Text("Waiting for peer...")
-                    .foregroundColor(.orange)
+                VStack {
+                    Spacer()
+                    Text("Waiting for peer... 🌐🫂")
+                        .font(.title)
+                        .foregroundColor(Color("PomopairAccent"))
+                    Spacer()
+                    Text("Click the link icon to start !")
+                        .font(.caption)
+                        .foregroundColor(Color("PomopairAccent"))
+                    Spacer()
+                }
+                
             }
             
             // Local Video (PiP)
@@ -78,7 +88,9 @@ struct VideoCallView: View {
                 }
                 Spacer()
                 
-                TimerOverlayView(viewModel: viewModel.timerViewModel)
+                if viewModel.remoteVideoTrack != nil {
+                    TimerOverlayView(viewModel: viewModel.timerViewModel)
+                }
             }
         }
         .onAppear {
