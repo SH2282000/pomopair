@@ -87,7 +87,7 @@ final class WebRTCClient: NSObject {
         
         for format in RTCCameraVideoCapturer.supportedFormats(for: frontCamera) {
             let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
-            let pixelFormat = CMFormatDescriptionGetMediaSubType(format.formatDescription)
+//            let pixelFormat = CMFormatDescriptionGetMediaSubType(format.formatDescription)
             
             // WebRTC supports NV12 (420v) and 420f usually
             if dimensions.width == targetWidth && dimensions.height == targetHeight {
@@ -165,7 +165,7 @@ final class WebRTCClient: NSObject {
         DispatchQueue.global(qos: .userInitiated).async {
             let session = AVAudioSession.sharedInstance()
             do {
-                try session.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetooth])
+                try session.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetoothHFP])
                 try session.setActive(true)
             } catch {
                 print("AVAudioSession configuration error: \(error)")
