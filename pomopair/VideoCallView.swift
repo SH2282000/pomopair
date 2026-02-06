@@ -2,10 +2,12 @@ import SwiftUI
 import WebRTC
 import SocketIO
 import Combine
+import UIKit
 
 
 struct VideoCallView: View {
     @StateObject private var viewModel: VideoCallViewModel
+    @State private var showShareSheet = false
     
     init(roomId: String? = nil) {
         _viewModel = StateObject(wrappedValue: VideoCallViewModel(roomId: roomId))
@@ -42,7 +44,12 @@ struct VideoCallView: View {
             VStack {
                 HStack {
                     if !viewModel.isJoiner {
-                        ShareLink(item: viewModel.shareUrl) {
+                        Button(action: {
+                            // Smart Action: Check Clipboard -> Join OR Share
+                            if !viewModel.attemptJoinFromClipboard() {
+                                showShareSheet = true
+                            }
+                        }) {
                             Image(systemName: "link")
                                 .font(.title)
                                 .padding(5)
@@ -51,6 +58,9 @@ struct VideoCallView: View {
                                 .clipShape(Circle())
                         }
                         .padding()
+                        .sheet(isPresented: $showShareSheet) {
+                            ShareSheet(activityItems: [viewModel.shareUrl])
+                        }
                     }
                     
                     Spacer()
@@ -79,16 +89,17 @@ struct VideoCallView: View {
 
 class VideoCallViewModel: NSObject, ObservableObject {
     
-    private let signalingClient: SignalingClient
+    // Changed to var to allow reconnection to different rooms
+    private var signalingClient: SignalingClient
     private let webRTCClient: WebRTCClient
     let timerViewModel = TimerViewModel()
     
     @Published var localVideoTrack: RTCVideoTrack?
     @Published var remoteVideoTrack: RTCVideoTrack?
     
-    // Room State
-    let roomId: String
-    let isJoiner: Bool // True if we joined via link, False if we created the room
+    // Room State - Changed to @Published var for dynamic updates
+    @Published var roomId: String
+    @Published var isJoiner: Bool // True if we joined via link, False if we created the room
     
     var shareUrl: URL {
         return URL(string: "https://85-214-6-146.nip.io/join/\(roomId)")!
@@ -97,21 +108,26 @@ class VideoCallViewModel: NSObject, ObservableObject {
     init(roomId: String? = nil) {
         // Using the predefined infrastructure from prompt
         let signalUrl = URL(string: "http://85.214.6.146:3000")!
-        // The WebRTCClient already has the hardcoded ICE servers as per instruction
         let turnServers = [""] 
         
-        // Determine Room ID and Role
+        // Determine Room ID and Role locally
+        let finalRoomId: String
+        let finalIsJoiner: Bool
+        
         if let id = roomId {
-            self.roomId = id
-            self.isJoiner = true
+            finalRoomId = id
+            finalIsJoiner = true
         } else {
-            self.roomId = UUID().uuidString
-            self.isJoiner = false
+            finalRoomId = UUID().uuidString
+            finalIsJoiner = false
         }
         
-        print("VideoCallViewModel initialized. Room: \(self.roomId), isJoiner: \(self.isJoiner)")
+        self.roomId = finalRoomId
+        self.isJoiner = finalIsJoiner
         
-        self.signalingClient = SignalingClient(serverUrl: signalUrl, roomName: self.roomId)
+        print("VideoCallViewModel initialized. Room: \(finalRoomId), isJoiner: \(finalIsJoiner)")
+        
+        self.signalingClient = SignalingClient(serverUrl: signalUrl, roomName: finalRoomId)
         self.webRTCClient = WebRTCClient(iceServers: turnServers)
         
         super.init()
@@ -144,7 +160,45 @@ class VideoCallViewModel: NSObject, ObservableObject {
         self.remoteVideoTrack = nil
         // In a real app we might want to dismiss the view or navigate back here
     }
+    
+    func attemptJoinFromClipboard() -> Bool {
+        guard let clipboardString = UIPasteboard.general.string else { return false }
+        
+        // Check for basic format: https://85-214-6-146.nip.io/join/<UUID>
+        // Or just raw UUID if we want to be permissive, but user asked for "matching the pattern"
+        let pattern = "https://85-214-6-146.nip.io/join/"
+        
+        if clipboardString.hasPrefix(pattern) {
+            let extractedUuid = clipboardString.replacingOccurrences(of: pattern, with: "")
+            // Validate UUID simply by checking length or attempting init (though init is strict)
+            if !extractedUuid.isEmpty {
+                 joinNewRoom(id: extractedUuid)
+                 return true
+            }
+        }
+        return false
+    }
+    
+    private func joinNewRoom(id: String) {
+        print("Switching to room: \(id)")
+        // 1. Disconnect current
+        self.signalingClient.disconnect()
+        
+        // 2. Update State
+        self.roomId = id
+        self.isJoiner = true
+        self.remoteVideoTrack = nil // Clear remote track
+        
+        // 3. Re-init Signaling Client with new room
+        let signalUrl = URL(string: "http://85.214.6.146:3000")!
+        self.signalingClient = SignalingClient(serverUrl: signalUrl, roomName: self.roomId)
+        self.signalingClient.delegate = self
+        
+        // 4. Connect
+        self.signalingClient.connect()
+    }
 }
+
 
 extension VideoCallViewModel: SignalingClientDelegate {
     func signalClientDidConnect(_ signalClient: SignalingClient) {
@@ -255,4 +309,16 @@ extension VideoCallViewModel {
 
 #Preview {
     VideoCallView()
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    var activityItems: [Any]
+    var applicationActivities: [UIActivity]? = nil
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
