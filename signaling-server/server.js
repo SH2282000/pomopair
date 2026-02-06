@@ -4,12 +4,13 @@ const io = require("socket.io")(3000, {
 });
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
 
   // 1. Join a specific "room" (e.g., 'room-1')
   socket.on("join", (roomId) => {
+    console.log("User " + socket.id + " joining room " + roomId);
     const clients = io.sockets.adapter.rooms.get(roomId);
     const numClients = clients ? clients.size : 0;
+    console.log("Number of clients in room " + roomId + ": " + (numClients + 1));
 
     if (numClients === 0) {
       socket.join(roomId);
