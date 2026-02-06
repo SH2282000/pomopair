@@ -308,6 +308,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = pomopair/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PomoPair;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera for video calling.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone for video calling.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -344,6 +346,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = pomopair/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PomoPair;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera for video calling.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to your microphone for video calling.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
