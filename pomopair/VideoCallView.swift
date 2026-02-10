@@ -15,24 +15,55 @@ struct VideoCallView: View {
     
     var body: some View {
         ZStack {
-            // Remote Video (Full Screen)
+            // Remote Video (Full Screen) or Waiting State
             if let remoteTrack = viewModel.remoteVideoTrack {
                 RTCVideoView(videoTrack: remoteTrack)
                     .edgesIgnoringSafeArea(.all)
             } else {
-                Color.black.edgesIgnoringSafeArea(.all)
-                VStack {
+                // Waiting State with Gradient Background
+                LinearGradient(gradient: Gradient(colors: [Color.black, Color(UIColor.darkGray)]), startPoint: .top, endPoint: .bottom)
+                    .edgesIgnoringSafeArea(.all)
+                
+                VStack(spacing: 30) {
                     Spacer()
+                    
                     Text("Waiting for peer... 🌐🫂")
-                        .font(.title)
-                        .foregroundColor(Color("PomopairAccent"))
-                    Spacer()
-                    Text("Click the link icon to start !")
-                        .font(.caption)
-                        .foregroundColor(Color("PomopairAccent"))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Share the link to start the session.")
+                        .font(.body)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Button(action: {
+                        // Smart Action: Check Clipboard -> Join OR Share
+                        if !viewModel.attemptJoinFromClipboard() {
+                            showShareSheet = true
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "link")
+                                .font(.headline)
+                            Text(viewModel.isJoiner ? "Join Room" : "Invite Peer")
+                                .fontWeight(.semibold)
+                        }
+                        .padding()
+                        .frame(maxWidth: 200)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .shadow(radius: 5)
+                    }
+                    .padding()
+                    .sheet(isPresented: $showShareSheet) {
+                        ShareSheet(activityItems: [viewModel.shareUrl])
+                    }
+                    
                     Spacer()
                 }
-                
             }
             
             // Local Video (PiP)
@@ -53,26 +84,6 @@ struct VideoCallView: View {
             // Controls
             VStack {
                 HStack {
-                    if !viewModel.isJoiner {
-                        Button(action: {
-                            // Smart Action: Check Clipboard -> Join OR Share
-                            if !viewModel.attemptJoinFromClipboard() {
-                                showShareSheet = true
-                            }
-                        }) {
-                            Image(systemName: "link")
-                                .font(.title)
-                                .padding(5)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .clipShape(Circle())
-                        }
-                        .padding()
-                        .sheet(isPresented: $showShareSheet) {
-                            ShareSheet(activityItems: [viewModel.shareUrl])
-                        }
-                    }
-                    
                     Spacer()
                     Button(action: {
                         viewModel.disconnect()
