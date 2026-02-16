@@ -20,6 +20,14 @@ final class WebRTCClient: NSObject {
     
     var localVideoTrack: RTCVideoTrack?
     var remoteVideoTrack: RTCVideoTrack?
+    var remoteAudioTrack: RTCAudioTrack?
+    var currentAudioOutput: AudioOutput = .speaker // Default to match VM
+
+    enum AudioOutput {
+        case mute
+        case speaker
+        case ear
+    }
     
     @available(*, unavailable)
     override init() {
@@ -112,6 +120,50 @@ final class WebRTCClient: NSObject {
         capturer.startCapture(with: frontCamera, format: format, fps: selectedFps)
     }
     
+    // MARK: - Media Control
+    func muteAudio() {
+        self.setAudioEnabled(false)
+    }
+    
+    func unmuteAudio() {
+        self.setAudioEnabled(true)
+    }
+    
+    // Fallback: If strict speaker toggle is needed:
+    func setAudioOutput(_ output: AudioOutput) {
+        self.currentAudioOutput = output
+        let session = AVAudioSession.sharedInstance()
+        do {
+            switch output {
+            case .mute:
+                self.remoteAudioTrack?.isEnabled = false
+            case .speaker:
+                self.remoteAudioTrack?.isEnabled = true
+                try session.overrideOutputAudioPort(.speaker)
+            case .ear:
+                self.remoteAudioTrack?.isEnabled = true
+                try session.overrideOutputAudioPort(.none)
+            }
+        } catch {
+            print("Error setting audio output: \(error)")
+        }
+    }
+    
+    func hideVideo() {
+        self.localVideoTrack?.isEnabled = false
+    }
+    
+    func showVideo() {
+        self.localVideoTrack?.isEnabled = true
+    }
+    
+    private func setAudioEnabled(_ isEnabled: Bool) {
+        if let audioTransceiver = self.peerConnection?.transceivers.first(where: { $0.mediaType == .audio }),
+           let track = audioTransceiver.sender.track as? RTCAudioTrack {
+            track.isEnabled = isEnabled
+        }
+    }
+    
     // MARK: - Private
     private func setup(iceServers: [String]) {
         let config = RTCConfiguration()
@@ -165,7 +217,7 @@ final class WebRTCClient: NSObject {
         DispatchQueue.global(qos: .userInitiated).async {
             let session = AVAudioSession.sharedInstance()
             do {
-                try session.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetoothHFP])
+                try session.setCategory(.playAndRecord, options: [.allowBluetoothHFP])
                 try session.setActive(true)
             } catch {
                 print("AVAudioSession configuration error: \(error)")
@@ -211,6 +263,11 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
             print("found remote video track")
             self.remoteVideoTrack = track
             self.delegate?.webRTCClient(self, didAddRemoteVideoTrack: track)
+        }
+        if let audioTrack = stream.audioTracks.first {
+            print("found remote audio track")
+            audioTrack.isEnabled = (self.currentAudioOutput != .mute)
+            self.remoteAudioTrack = audioTrack
         }
     }
     
