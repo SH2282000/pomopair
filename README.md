@@ -19,7 +19,7 @@ The Pomodoro timer state is synchronized instantly between both users.
 ### 3. Instant Joining via Deep Links
 **Mechanism:** Universal Links & Deferred Deep Linking
 Joining a session is frictionless.
--   **Universal Links:** Users can share a link like `https://85-214-6-146.nip.io/join/<UUID>`. Tapping this link immediately opens the app and joins the specific room.
+-   **Universal Links:** Users can share a link like `https://87-106-60-114.nip.io/join/<UUID>`. Tapping this link immediately opens the app and joins the specific room.
 -   **Clipboard Fallback:** If a user doesn't have the app installed, the web landing page copies the Room UUID to their clipboard. Upon first launch, Pomopair detects this UUID and automatically enters the session.
 
 ## Data Privacy & Security

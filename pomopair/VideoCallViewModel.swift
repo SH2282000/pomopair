@@ -40,7 +40,7 @@ class VideoCallViewModel: NSObject, ObservableObject {
     }
 
     var shareUrl: URL {
-        return URL(string: "https://85-214-6-146.nip.io/join/\(roomId)")!
+        return URL(string: "https://87-106-60-114.nip.io/join/\(roomId)")!
     }
 
     func toggleMute() {
@@ -76,7 +76,7 @@ class VideoCallViewModel: NSObject, ObservableObject {
 
     init(roomId: String? = nil) {
         // Using the predefined infrastructure from prompt
-        let signalUrl = URL(string: "http://85.214.6.146:3000")!
+        let signalUrl = URL(string: "http://87.106.60.114:3000")!
         let turnServers = [""]
 
         // Determine Room ID and Role locally
@@ -136,9 +136,9 @@ class VideoCallViewModel: NSObject, ObservableObject {
     func attemptJoinFromClipboard() -> Bool {
         guard let clipboardString = UIPasteboard.general.string else { return false }
 
-        // Check for basic format: https://85-214-6-146.nip.io/join/<UUID>
+        // Check for basic format: https://87-106-60-114.nip.io/join/<UUID>
         // Or just raw UUID if we want to be permissive, but user asked for "matching the pattern"
-        let pattern = "https://85-214-6-146.nip.io/join/"
+        let pattern = "https://87-106-60-114.nip.io/join/"
 
         if clipboardString.hasPrefix(pattern) {
             let extractedUuid = clipboardString.replacingOccurrences(of: pattern, with: "")
@@ -162,7 +162,7 @@ class VideoCallViewModel: NSObject, ObservableObject {
         self.remoteVideoTrack = nil // Clear remote track
 
         // 3. Re-init Signaling Client with new room
-        let signalUrl = URL(string: "http://85.214.6.146:3000")!
+        let signalUrl = URL(string: "http://87.106.60.114:3000")!
         self.signalingClient = SignalingClient(serverUrl: signalUrl, roomName: self.roomId)
         self.signalingClient.delegate = self
 

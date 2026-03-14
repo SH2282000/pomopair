@@ -173,7 +173,7 @@ final class WebRTCClient: NSObject {
         // The prompt gave specific TURN with user/pass
         
         // HARDCODED TURN based on Prompt
-        let turnServer = RTCIceServer(urlStrings: ["turn:85.214.6.146:3478"],
+        let turnServer = RTCIceServer(urlStrings: ["turn:87.106.60.114:3478"],
                                       username: "myuser",
                                       credential: "mypassword")
         

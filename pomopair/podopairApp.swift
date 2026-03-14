@@ -40,7 +40,7 @@ struct pomopairApp: App {
     }
     
     private func handleIncomingURL(_ url: URL) {
-        // Expected URL: https://85-214-6-146.nip.io/join/<UUID>
+        // Expected URL: https://87-106-60-114.nip.io/join/<UUID>
         print("Incoming URL: \(url)")
         
         let pathComponents = url.pathComponents
