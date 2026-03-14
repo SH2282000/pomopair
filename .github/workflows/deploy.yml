@@ -1,0 +1,43 @@
+name: Deploy Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy and Restart Server
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            [ -f ~/.profile ] && . ~/.profile
+            [ -f ~/.bash_profile ] && . ~/.bash_profile
+            [ -f ~/.bashrc ] && . ~/.bashrc
+
+            export PATH=$PATH:/root/.nvm/versions/node/v25.8.1/bin
+
+            if ! command -v node &> /dev/null; then
+              echo "❌ Error: Could not find 'node'. Please verify it is installed on the VPS."
+              echo "If installed, find its location by typing 'which node' on the server and update the PATH in this workflow."
+              exit 1
+            fi
+
+            cd ~/pomopair/signaling-server
+
+            # Pull the latest code from the repository, regardless of conflicts
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Update dependencies
+            npm i
+
+            # Restart the Systemd service
+            systemctl restart pomopair
+            echo "Server successfully restarted!"
